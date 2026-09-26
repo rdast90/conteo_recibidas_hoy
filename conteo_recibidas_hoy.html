@@ -1,0 +1,1007 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Conteo — Recibidas Hoy</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@300;400;500&display=swap');
+
+:root {
+  --cream: #f5f3ee;
+  --white: #ffffff;
+  --ink: #1a1a18;
+  --ink-light: #5a5a54;
+  --ink-faint: #9a9a90;
+  --border: #e2e0d8;
+  --green: #2d6a4f;
+  --green-bg: #e8f5ee;
+  --red: #c0392b;
+  --red-bg: #fdecea;
+  --blue: #1a4a7a;
+  --blue-bg: #e8f0fa;
+  --amber: #b7650a;
+  --amber-bg: #fef3e2;
+  --purple: #5b3c8a;
+  --purple-bg: #f0eafa;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+body {
+  font-family: 'IBM Plex Sans', sans-serif;
+  background: var(--cream);
+  color: var(--ink);
+  min-height: 100vh;
+  font-size: 14px;
+  padding-bottom: 80px;
+}
+
+/* HEADER */
+header {
+  background: var(--ink);
+  color: var(--cream);
+  padding: 14px 16px;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  position: relative;
+}
+header h1 { font-family: 'Playfair Display', serif; font-size: 18px; font-weight: 600; }
+header span { font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: #888; text-transform: uppercase; letter-spacing: .1em; }
+
+/* BOTTOM NAV */
+.bottom-nav {
+  position: fixed;
+  bottom: 0; left: 0; right: 0;
+  background: var(--white);
+  border-top: 1px solid var(--border);
+  display: flex;
+  z-index: 200;
+}
+.bottom-nav button {
+  flex: 1;
+  background: none;
+  border: none;
+  padding: 10px 4px 8px;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  color: var(--ink-faint);
+  cursor: pointer;
+  border-top: 2px solid transparent;
+  transition: all .15s;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+}
+.bottom-nav button .icon { font-size: 16px; }
+.bottom-nav button.active { color: var(--ink); border-top-color: var(--ink); }
+
+/* VIEWS */
+.view { display: none; padding: 14px 12px; }
+.view.active { display: block; }
+
+/* SECTION TITLE */
+.section-title {
+  font-family: 'Playfair Display', serif;
+  font-size: 17px;
+  font-weight: 600;
+  margin-bottom: 14px;
+}
+
+/* MODEL CARD */
+.model-card {
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  margin-bottom: 10px;
+  overflow: hidden;
+}
+.model-card.hidden-card { opacity: .55; }
+
+.model-header {
+  display: flex;
+  align-items: center;
+  padding: 12px 14px;
+  gap: 10px;
+}
+.model-name {
+  font-family: 'Playfair Display', serif;
+  font-size: 15px;
+  font-weight: 600;
+  flex: 1;
+}
+.model-total {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--blue);
+  background: var(--blue-bg);
+  border-radius: 20px;
+  padding: 2px 10px;
+}
+.model-total.zero { background: var(--cream); color: var(--ink-faint); }
+
+.hide-btn {
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  font-size: 11px;
+  color: var(--ink-faint);
+  padding: 3px 8px;
+  cursor: pointer;
+  font-family: 'IBM Plex Mono', monospace;
+}
+
+/* COLOR ROWS */
+.color-rows { border-top: 1px solid var(--border); }
+
+.color-row {
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+}
+.color-row:last-child { border-bottom: none; }
+
+.color-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.pill {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 20px;
+  font-size: 10px;
+  font-family: 'IBM Plex Mono', monospace;
+  font-weight: 500;
+  text-transform: uppercase;
+}
+.pill-blanco { background: #f0ede4; color: #6b6456; border: 1px solid #d8d2c4; }
+.pill-negro { background: #2a2a24; color: #e8e4dc; }
+.pill-rosado { background: #fce4ec; color: #ad1457; }
+.pill-beige { background: #f5e6c8; color: #7a5c1e; }
+.pill-dorado { background: #fff8e1; color: #a07800; border: 1px solid #ffe082; }
+.pill-azul { background: var(--blue-bg); color: var(--blue); }
+
+.color-subtotal {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--ink-light);
+  margin-left: auto;
+}
+
+/* INPUT GROUPS */
+.input-groups { display: flex; flex-direction: column; gap: 6px; }
+
+.input-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--cream);
+  border-radius: 4px;
+  padding: 7px 10px;
+}
+.input-group-label {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  color: var(--ink-faint);
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.input-group-label .pkg-size {
+  color: var(--ink-light);
+  font-weight: 500;
+}
+.qty-wrap {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  overflow: hidden;
+}
+.qty-btn {
+  background: none;
+  border: none;
+  width: 32px;
+  height: 32px;
+  font-size: 18px;
+  color: var(--ink);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background .1s;
+  flex-shrink: 0;
+}
+.qty-btn:active { background: var(--cream); }
+.qty-input {
+  border: none;
+  background: none;
+  width: 44px;
+  text-align: center;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--ink);
+  outline: none;
+  padding: 0;
+  -moz-appearance: textfield;
+}
+.qty-input::-webkit-inner-spin-button,
+.qty-input::-webkit-outer-spin-button { -webkit-appearance: none; }
+
+/* PHOTOS */
+.photo-section {
+  padding: 8px 14px 12px;
+  border-top: 1px solid var(--border);
+}
+.photo-section-label {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  color: var(--ink-faint);
+  margin-bottom: 7px;
+}
+.photo-strip {
+  display: flex;
+  gap: 7px;
+  flex-wrap: wrap;
+}
+.photo-thumb {
+  width: 58px;
+  height: 58px;
+  border-radius: 4px;
+  object-fit: cover;
+  border: 1px solid var(--border);
+  cursor: pointer;
+}
+.photo-add-btn {
+  width: 58px;
+  height: 58px;
+  border-radius: 4px;
+  border: 1.5px dashed var(--border);
+  background: var(--cream);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  color: var(--ink-faint);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.photo-file-input { display: none; }
+
+/* PHOTO VIEWER */
+.photo-viewer {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.92);
+  z-index: 999;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+.photo-viewer.open { display: flex; }
+.photo-viewer img { max-width: 95vw; max-height: 80vh; border-radius: 4px; object-fit: contain; }
+.photo-viewer-close {
+  position: absolute;
+  top: 16px; right: 16px;
+  background: rgba(255,255,255,.15);
+  border: none;
+  color: white;
+  font-size: 22px;
+  width: 40px; height: 40px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+}
+.photo-viewer-del {
+  margin-top: 16px;
+  background: var(--red-bg);
+  border: 1px solid #f0c0bb;
+  color: var(--red);
+  border-radius: 4px;
+  padding: 8px 20px;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 11px;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+/* RESUMEN VIEW */
+.resumen-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 14px;
+}
+.copy-btn {
+  background: var(--ink);
+  color: var(--cream);
+  border: none;
+  border-radius: 4px;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  padding: 8px 14px;
+  cursor: pointer;
+}
+.resumen-card {
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 10px 14px;
+  margin-bottom: 8px;
+}
+.resumen-model-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 8px;
+}
+.resumen-model-name {
+  font-family: 'Playfair Display', serif;
+  font-size: 14px;
+  font-weight: 600;
+}
+.resumen-model-total {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--blue);
+}
+.resumen-color-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.resumen-color-cell {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  background: var(--cream);
+  border-radius: 4px;
+  padding: 4px 8px 4px 4px;
+  flex: 1;
+  min-width: calc(33% - 4px);
+  max-width: calc(33% - 4px);
+}
+.resumen-color-qty {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--ink);
+  white-space: nowrap;
+}
+.total-banner {
+  background: var(--ink);
+  color: var(--cream);
+  border-radius: 6px;
+  padding: 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+.total-banner-label { font-family: 'IBM Plex Mono', monospace; font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: #888; }
+.total-banner-val { font-family: 'IBM Plex Mono', monospace; font-size: 24px; font-weight: 500; }
+.empty-state { text-align: center; padding: 40px 20px; color: var(--ink-faint); font-size: 13px; }
+
+/* CONFIG VIEW */
+.cfg-model-block {
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  margin-bottom: 10px;
+  overflow: hidden;
+}
+.cfg-model-header {
+  padding: 11px 14px;
+  background: var(--cream);
+  font-family: 'Playfair Display', serif;
+  font-size: 14px;
+  font-weight: 600;
+  border-bottom: 1px solid var(--border);
+}
+.cfg-color-row {
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+}
+.cfg-color-row:last-child { border-bottom: none; }
+.cfg-color-name {
+  font-size: 12px;
+  color: var(--ink-light);
+  margin-bottom: 6px;
+}
+.cfg-pkg-list { display: flex; flex-direction: column; gap: 5px; }
+.cfg-pkg-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.cfg-pkg-input {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 13px;
+  padding: 5px 8px;
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  background: var(--cream);
+  width: 80px;
+  text-align: center;
+  outline: none;
+}
+.cfg-pkg-input:focus { border-color: var(--ink); background: var(--white); }
+.cfg-pkg-label { font-size: 12px; color: var(--ink-faint); }
+.cfg-pkg-del {
+  background: none;
+  border: none;
+  color: var(--red);
+  font-size: 16px;
+  cursor: pointer;
+  padding: 0 2px;
+  line-height: 1;
+}
+.cfg-add-pkg {
+  background: none;
+  border: 1px dashed var(--border);
+  border-radius: 3px;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  color: var(--ink-faint);
+  padding: 5px 10px;
+  cursor: pointer;
+  margin-top: 5px;
+}
+.cfg-save-btn {
+  background: var(--ink);
+  color: var(--cream);
+  border: none;
+  border-radius: 4px;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  padding: 11px 20px;
+  cursor: pointer;
+  width: 100%;
+  margin-top: 6px;
+}
+
+/* OCULTOS TOGGLE */
+.ocultos-toggle {
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 11px 14px;
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  color: var(--ink-light);
+  cursor: pointer;
+  margin-bottom: 10px;
+}
+.reset-btn {
+  background: var(--red-bg);
+  color: var(--red);
+  border: 1px solid #f0c0bb;
+  border-radius: 4px;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 11px;
+  text-transform: uppercase;
+  padding: 8px 14px;
+  cursor: pointer;
+  width: 100%;
+  margin-top: 8px;
+}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Recibidas Hoy</h1>
+  <span id="header-date"></span>
+</header>
+
+<!-- Photo viewer overlay -->
+<div class="photo-viewer" id="photo-viewer">
+  <button class="photo-viewer-close" onclick="closePhotoViewer()">✕</button>
+  <img id="photo-viewer-img" src="" alt="">
+  <button class="photo-viewer-del" onclick="deleteCurrentPhoto()">🗑 Eliminar foto</button>
+</div>
+
+<!-- VIEWS -->
+<div class="view active" id="view-conteo"></div>
+
+<div class="view" id="view-resumen">
+  <div class="resumen-header">
+    <div class="section-title" style="margin:0">Resumen</div>
+    <button class="copy-btn" onclick="copyResumen()">Copiar</button>
+  </div>
+  <div id="resumen-content"></div>
+</div>
+
+<div class="view" id="view-config">
+  <div class="section-title">Configuración</div>
+  <div id="config-content"></div>
+  <button class="cfg-save-btn" onclick="saveConfig()">Guardar configuración</button>
+  <button class="reset-btn" onclick="resetConteo()">Borrar conteo actual</button>
+</div>
+
+<!-- Bottom Nav -->
+<nav class="bottom-nav">
+  <button class="active" onclick="switchView('conteo', this)">
+    <span class="icon">📦</span>Conteo
+  </button>
+  <button onclick="switchView('resumen', this)">
+    <span class="icon">📋</span>Resumen
+  </button>
+  <button onclick="switchView('config', this)">
+    <span class="icon">⚙️</span>Config
+  </button>
+</nav>
+
+<script>
+// ── DATA ──────────────────────────────────────────────────────────────────
+const MODELOS = [
+  { nombre: 'Redondas',          colores: ['Blanco','Negro','Rosado','Beige','Dorado','Azul'] },
+  { nombre: 'Redondas Grandes',  colores: ['Blanco','Negro','Rosado','Beige'] },
+  { nombre: 'Cuadradas',         colores: ['Blanco','Negro','Rosado'] },
+  { nombre: 'Cuadradas Grandes', colores: ['Blanco'] },
+  { nombre: 'Sombrereras',       colores: ['Blanco','Negro'] },
+  { nombre: 'Sombrereras Grandes', colores: ['Blanco'] },
+  { nombre: 'Corazón',           colores: ['Blanco','Negro'] },
+  { nombre: 'Corazón Grande',    colores: ['Negro'] },
+  { nombre: 'Cartera',           colores: ['Negro','Rosado'] },
+];
+
+const KEYS = {
+  conteo:   'rec_conteo',
+  config:   'rec_config',
+  fotos:    'rec_fotos',
+  ocultos:  'rec_ocultos',
+};
+
+// Paquetes por defecto para cada modelo|color
+const DEFAULT_PKGS = {
+  'Redondas|Blanco': [12], 'Redondas|Negro': [12], 'Redondas|Rosado': [12],
+  'Redondas|Beige': [12], 'Redondas|Dorado': [12], 'Redondas|Azul': [12],
+  'Redondas Grandes|Blanco': [12], 'Redondas Grandes|Negro': [12],
+  'Redondas Grandes|Rosado': [12], 'Redondas Grandes|Beige': [12],
+  'Cuadradas|Blanco': [18], 'Cuadradas|Negro': [18], 'Cuadradas|Rosado': [18],
+  'Cuadradas Grandes|Blanco': [6],
+  'Sombrereras|Blanco': [6], 'Sombrereras|Negro': [6],
+  'Sombrereras Grandes|Blanco': [4],
+  'Corazón|Blanco': [10], 'Corazón|Negro': [10],
+  'Corazón Grande|Negro': [6],
+  'Cartera|Negro': [4], 'Cartera|Rosado': [4],
+};
+
+function load(k, def) {
+  try { return JSON.parse(localStorage.getItem(k)) || def; } catch { return def; }
+}
+function save(k, v) { localStorage.setItem(k, JSON.stringify(v)); }
+
+function getConteo() { return load(KEYS.conteo, {}); }
+function getConfig() {
+  const stored = load(KEYS.config, null);
+  if (stored) return stored;
+  // Primera vez: sembrar defaults
+  save(KEYS.config, DEFAULT_PKGS);
+  return { ...DEFAULT_PKGS };
+}
+function getFotos()  { return load(KEYS.fotos, {}); }
+function getOcultos(){ return load(KEYS.ocultos, []); }
+
+function setConteoVal(modelo, color, field, value) {
+  const c = getConteo();
+  const k = modelo+'|'+color;
+  if (!c[k]) c[k] = { unidades: 0, paquetes: {} };
+  if (field === 'unidades') {
+    c[k].unidades = Math.max(0, value);
+  } else {
+    c[k].paquetes[field] = Math.max(0, value);
+  }
+  save(KEYS.conteo, c);
+  updateTotals(modelo, color);
+}
+
+function getTotal(modelo, color) {
+  const c = getConteo(), cfg = getConfig();
+  const k = modelo+'|'+color;
+  if (!c[k]) return 0;
+  const row = c[k];
+  let total = row.unidades || 0;
+  const pkgs = cfg[k] || [];
+  pkgs.forEach(size => {
+    total += (row.paquetes[size] || 0) * size;
+  });
+  return total;
+}
+
+function getModelTotal(modelo) {
+  const m = MODELOS.find(x => x.nombre === modelo);
+  if (!m) return 0;
+  return m.colores.reduce((s, c) => s + getTotal(modelo, c), 0);
+}
+
+// ── RENDER CONTEO ─────────────────────────────────────────────────────────
+function renderConteo() {
+  const ocultos = getOcultos();
+  const visibles = MODELOS.filter(m => !ocultos.includes(m.nombre));
+  const hidden   = MODELOS.filter(m =>  ocultos.includes(m.nombre));
+  let html = '';
+
+  visibles.forEach(m => {
+    html += modeloCardHtml(m, false);
+  });
+
+  if (hidden.length) {
+    html += `<button class="ocultos-toggle" onclick="toggleOcultosList()" id="ocultos-btn">
+      <span>Modelos ocultos (${hidden.length})</span>
+      <span id="ocultos-arrow">▼</span>
+    </button>
+    <div id="ocultos-list" style="display:none">`;
+    hidden.forEach(m => { html += modeloCardHtml(m, true); });
+    html += '</div>';
+  }
+
+  document.getElementById('view-conteo').innerHTML = html;
+}
+
+function modeloCardHtml(m, isOculto) {
+  const cfg = getConfig();
+  const fotos = getFotos();
+  const modelTotal = getModelTotal(m.nombre);
+  const totalClass = modelTotal === 0 ? 'zero' : '';
+
+  let colorRowsHtml = m.colores.map(color => {
+    const k = m.nombre+'|'+color;
+    const pkgs = cfg[k] || [];
+    const conteo = (getConteo()[k] || {});
+    const subtotal = getTotal(m.nombre, color);
+
+    let inputGroupsHtml = `<div class="input-groups">`;
+    // Unidades sueltas
+    inputGroupsHtml += inputGroupHtml(m.nombre, color, 'unidades', 'Unidades sueltas', conteo.unidades || 0);
+    // Paquetes
+    pkgs.forEach(size => {
+      inputGroupsHtml += inputGroupHtml(m.nombre, color, size, `Paquetes de`, conteo.paquetes?.[size] || 0, size);
+    });
+    inputGroupsHtml += `</div>`;
+
+    return `<div class="color-row">
+      <div class="color-label">
+        ${colorPill(color)}
+        <span class="color-subtotal">${subtotal > 0 ? subtotal + ' uds' : ''}</span>
+      </div>
+      ${inputGroupsHtml}
+    </div>`;
+  }).join('');
+
+  const modelFotos = fotos[m.nombre] || [];
+  let fotosHtml = modelFotos.map((src, i) =>
+    `<img class="photo-thumb" src="${src}" onclick="openPhotoViewer('${escHtml(m.nombre)}', ${i})">`
+  ).join('');
+  fotosHtml += `<label class="photo-add-btn">
+    <span>+</span>
+    <input class="photo-file-input" type="file" accept="image/*" capture="environment" onchange="addPhoto('${escHtml(m.nombre)}', this)">
+  </label>`;
+
+  return `<div class="model-card${isOculto ? ' hidden-card' : ''}" id="card-${cssId(m.nombre)}">
+    <div class="model-header">
+      <div class="model-name">${m.nombre}</div>
+      <span class="model-total ${totalClass}" id="total-${cssId(m.nombre)}">${modelTotal} uds</span>
+      <button class="hide-btn" onclick="toggleOculto('${escHtml(m.nombre)}')">${isOculto ? 'Mostrar' : 'Ocultar'}</button>
+    </div>
+    <div class="color-rows">${colorRowsHtml}</div>
+    <div class="photo-section">
+      <div class="photo-section-label">Fotos</div>
+      <div class="photo-strip" id="photos-${cssId(m.nombre)}">${fotosHtml}</div>
+    </div>
+  </div>`;
+}
+
+function inputGroupHtml(modelo, color, field, label, val, pkgSize) {
+  const fieldStr = String(field);
+  const idKey = cssId(modelo)+'_'+cssId(color)+'_'+fieldStr;
+  const labelHtml = pkgSize
+    ? `<span class="input-group-label">${label} <span class="pkg-size">${pkgSize}</span></span>`
+    : `<span class="input-group-label">${label}</span>`;
+  return `<div class="input-group">
+    ${labelHtml}
+    <div class="qty-wrap">
+      <button class="qty-btn" ontouchstart="" onclick="adjustVal('${escHtml(modelo)}','${color}','${fieldStr}',-1)">−</button>
+      <input class="qty-input" type="number" min="0" value="${val}" id="inp-${idKey}"
+        onchange="setConteoVal('${escHtml(modelo)}','${color}','${fieldStr}',+this.value)"
+        oninput="setConteoVal('${escHtml(modelo)}','${color}','${fieldStr}',+this.value)">
+      <button class="qty-btn" ontouchstart="" onclick="adjustVal('${escHtml(modelo)}','${color}','${fieldStr}',1)">+</button>
+    </div>
+  </div>`;
+}
+
+function adjustVal(modelo, color, field, delta) {
+  const idKey = cssId(modelo)+'_'+cssId(color)+'_'+field;
+  const inp = document.getElementById('inp-'+idKey);
+  if (!inp) return;
+  const newVal = Math.max(0, (parseInt(inp.value) || 0) + delta);
+  inp.value = newVal;
+  setConteoVal(modelo, color, field, newVal);
+}
+
+function updateTotals(modelo, color) {
+  // update color subtotal label
+  const k = modelo+'|'+color;
+  const subtotal = getTotal(modelo, color);
+  // find the color-label in the DOM
+  const card = document.getElementById('card-'+cssId(modelo));
+  if (!card) return;
+  const colorRows = card.querySelectorAll('.color-row');
+  const m = MODELOS.find(x => x.nombre === modelo);
+  if (!m) return;
+  const idx = m.colores.indexOf(color);
+  if (idx >= 0 && colorRows[idx]) {
+    const lbl = colorRows[idx].querySelector('.color-subtotal');
+    if (lbl) lbl.textContent = subtotal > 0 ? subtotal + ' uds' : '';
+  }
+  // update model total
+  const totalEl = document.getElementById('total-'+cssId(modelo));
+  if (totalEl) {
+    const mt = getModelTotal(modelo);
+    totalEl.textContent = mt + ' uds';
+    totalEl.className = 'model-total' + (mt === 0 ? ' zero' : '');
+  }
+}
+
+// ── OCULTAR ───────────────────────────────────────────────────────────────
+function toggleOculto(nombre) {
+  const ocultos = getOcultos();
+  const idx = ocultos.indexOf(nombre);
+  if (idx >= 0) ocultos.splice(idx, 1);
+  else ocultos.push(nombre);
+  save(KEYS.ocultos, ocultos);
+  renderConteo();
+}
+
+function toggleOcultosList() {
+  const list = document.getElementById('ocultos-list');
+  const arrow = document.getElementById('ocultos-arrow');
+  if (!list) return;
+  const open = list.style.display === 'block';
+  list.style.display = open ? 'none' : 'block';
+  if (arrow) arrow.textContent = open ? '▼' : '▲';
+}
+
+// ── FOTOS ─────────────────────────────────────────────────────────────────
+function addPhoto(modelo, input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    const fotos = getFotos();
+    if (!fotos[modelo]) fotos[modelo] = [];
+    fotos[modelo].push(e.target.result);
+    save(KEYS.fotos, fotos);
+    refreshPhotoStrip(modelo);
+  };
+  reader.readAsDataURL(file);
+  input.value = '';
+}
+
+function refreshPhotoStrip(modelo) {
+  const strip = document.getElementById('photos-'+cssId(modelo));
+  if (!strip) return;
+  const fotos = getFotos();
+  const modelFotos = fotos[modelo] || [];
+  let html = modelFotos.map((src, i) =>
+    `<img class="photo-thumb" src="${src}" onclick="openPhotoViewer('${escHtml(modelo)}', ${i})">`
+  ).join('');
+  html += `<label class="photo-add-btn">
+    <span>+</span>
+    <input class="photo-file-input" type="file" accept="image/*" capture="environment" onchange="addPhoto('${escHtml(modelo)}', this)">
+  </label>`;
+  strip.innerHTML = html;
+}
+
+let _viewerModelo = null, _viewerIdx = null;
+function openPhotoViewer(modelo, idx) {
+  const fotos = getFotos();
+  const src = (fotos[modelo] || [])[idx];
+  if (!src) return;
+  _viewerModelo = modelo; _viewerIdx = idx;
+  document.getElementById('photo-viewer-img').src = src;
+  document.getElementById('photo-viewer').classList.add('open');
+}
+function closePhotoViewer() {
+  document.getElementById('photo-viewer').classList.remove('open');
+  _viewerModelo = null; _viewerIdx = null;
+}
+function deleteCurrentPhoto() {
+  if (_viewerModelo === null || _viewerIdx === null) return;
+  if (!confirm('¿Eliminar esta foto?')) return;
+  const fotos = getFotos();
+  fotos[_viewerModelo].splice(_viewerIdx, 1);
+  save(KEYS.fotos, fotos);
+  closePhotoViewer();
+  refreshPhotoStrip(_viewerModelo);
+}
+
+// ── RESUMEN ───────────────────────────────────────────────────────────────
+function renderResumen() {
+  const grand = MODELOS.reduce((s, m) => s + getModelTotal(m.nombre), 0);
+
+  if (grand === 0) {
+    document.getElementById('resumen-content').innerHTML = '<div class="empty-state">Aún no hay conteo registrado.</div>';
+    return;
+  }
+
+  let html = `<div class="total-banner">
+    <div><div class="total-banner-label">Total depósito</div></div>
+    <div class="total-banner-val">${grand} uds</div>
+  </div>`;
+
+  MODELOS.forEach(m => {
+    const mt = getModelTotal(m.nombre);
+    if (mt === 0) return;
+
+    // Solo colores con conteo > 0
+    const activeColors = m.colores.filter(c => getTotal(m.nombre, c) > 0);
+
+    // Agrupar en filas de máximo 3
+    let colorGridHtml = '<div class="resumen-color-grid">';
+    activeColors.forEach(color => {
+      const t = getTotal(m.nombre, color);
+      colorGridHtml += `<div class="resumen-color-cell">
+        ${colorPill(color)}
+        <span class="resumen-color-qty">${t}</span>
+      </div>`;
+    });
+    colorGridHtml += '</div>';
+
+    html += `<div class="resumen-card">
+      <div class="resumen-model-row">
+        <span class="resumen-model-name">${m.nombre}</span>
+        <span class="resumen-model-total">${mt} uds</span>
+      </div>
+      ${colorGridHtml}
+    </div>`;
+  });
+
+  document.getElementById('resumen-content').innerHTML = html;
+}
+
+function copyResumen() {
+  const grand = MODELOS.reduce((s, m) => s + getModelTotal(m.nombre), 0);
+  let text = `📦 Conteo depósito — ${new Date().toLocaleDateString('es-PE')}\n`;
+  text += `Total: ${grand} uds\n\n`;
+  MODELOS.forEach(m => {
+    const mt = getModelTotal(m.nombre);
+    if (mt === 0) return;
+    text += `${m.nombre}: ${mt} uds\n`;
+    m.colores.forEach(color => {
+      const t = getTotal(m.nombre, color);
+      if (t === 0) return;
+      text += `  ${color}: ${t}\n`;
+    });
+  });
+  navigator.clipboard.writeText(text).then(() => {
+    const btn = document.querySelector('.copy-btn');
+    btn.textContent = '✓ Copiado';
+    setTimeout(() => btn.textContent = 'Copiar', 2000);
+  }).catch(() => alert(text));
+}
+
+// ── CONFIG ────────────────────────────────────────────────────────────────
+function renderConfig() {
+  const cfg = getConfig();
+  let html = '';
+  MODELOS.forEach(m => {
+    let colorRowsHtml = m.colores.map(color => {
+      const k = m.nombre+'|'+color;
+      const pkgs = cfg[k] || [];
+      const pkgRowsHtml = pkgs.map((size, i) =>
+        `<div class="cfg-pkg-row" id="pkgrow-${cssId(k)}-${i}">
+          <input class="cfg-pkg-input" type="number" min="1" value="${size}" placeholder="0" id="pkginp-${cssId(k)}-${i}">
+          <span class="cfg-pkg-label">uds / paquete</span>
+          <button class="cfg-pkg-del" onclick="removePkg('${escHtml(m.nombre)}','${color}',${i})">✕</button>
+        </div>`
+      ).join('');
+      return `<div class="cfg-color-row">
+        <div class="cfg-color-name">${color}</div>
+        <div class="cfg-pkg-list" id="pkglist-${cssId(k)}">${pkgRowsHtml}</div>
+        <button class="cfg-add-pkg" onclick="addPkgRow('${escHtml(m.nombre)}','${color}')">+ Agregar paquete</button>
+      </div>`;
+    }).join('');
+    html += `<div class="cfg-model-block">
+      <div class="cfg-model-header">${m.nombre}</div>
+      ${colorRowsHtml}
+    </div>`;
+  });
+  document.getElementById('config-content').innerHTML = html;
+}
+
+function addPkgRow(modelo, color) {
+  const cfg = getConfig();
+  const k = modelo+'|'+color;
+  if (!cfg[k]) cfg[k] = [];
+  cfg[k].push(10);
+  save(KEYS.config, cfg);
+  renderConfig();
+}
+
+function removePkg(modelo, color, idx) {
+  const cfg = getConfig();
+  const k = modelo+'|'+color;
+  if (cfg[k]) cfg[k].splice(idx, 1);
+  save(KEYS.config, cfg);
+  renderConfig();
+}
+
+function saveConfig() {
+  const cfg = getConfig();
+  MODELOS.forEach(m => {
+    m.colores.forEach(color => {
+      const k = m.nombre+'|'+color;
+      const pkgs = cfg[k] || [];
+      pkgs.forEach((_, i) => {
+        const inp = document.getElementById(`pkginp-${cssId(k)}-${i}`);
+        if (inp) pkgs[i] = Math.max(1, parseInt(inp.value) || 1);
+      });
+      cfg[k] = pkgs;
+    });
+  });
+  save(KEYS.config, cfg);
+  alert('Configuración guardada.');
+  renderConteo();
+}
+
+function resetConteo() {
+  if (!confirm('¿Borrar todo el conteo actual? Las fotos y la configuración se conservan.')) return;
+  save(KEYS.conteo, {});
+  renderConteo();
+}
+
+// ── UTILS ─────────────────────────────────────────────────────────────────
+function cssId(s) { return String(s).replace(/[^a-zA-Z0-9]/g, '_'); }
+function escHtml(s) { return String(s).replace(/'/g, "\\'"); }
+function colorPill(c) {
+  const map = { Blanco:'pill-blanco', Negro:'pill-negro', Rosado:'pill-rosado', Beige:'pill-beige', Dorado:'pill-dorado', Azul:'pill-azul' };
+  return `<span class="pill ${map[c]||''}">${c}</span>`;
+}
+
+// ── NAV ───────────────────────────────────────────────────────────────────
+function switchView(name, btn) {
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.querySelectorAll('.bottom-nav button').forEach(b => b.classList.remove('active'));
+  document.getElementById('view-'+name).classList.add('active');
+  btn.classList.add('active');
+  if (name === 'resumen') renderResumen();
+  if (name === 'config')  renderConfig();
+}
+
+// ── INIT ──────────────────────────────────────────────────────────────────
+document.getElementById('header-date').textContent = new Date().toLocaleDateString('es-PE', { day:'2-digit', month:'short', year:'numeric' });
+renderConteo();
+</script>
+</body>
+</html>
